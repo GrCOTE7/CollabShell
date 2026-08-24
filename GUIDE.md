@@ -14,7 +14,7 @@
 - [Mon verdict sur tes craintes de "ne pas être à la hauteur"](#mon-verdict-sur-tes-craintes-de-ne-pas-être-à-la-hauteur)
 - [💡 Pour aller plus loin](#-pour-aller-plus-loin)
 
-Tu l'as bien identifié : c'est un très beau projet. Voici ce qui est confirmé après exploration :
+Tu l'as bien identifié : C'est un très beau projet. Voici ce qui est confirmé après exploration :
 
 |         Fait          | Détail                                                                                                                  |
 | :-------------------: | ----------------------------------------------------------------------------------------------------------------------- |
@@ -26,7 +26,12 @@ Tu l'as bien identifié : c'est un très beau projet. Voici ce qui est confirmé
 |       **Tests**       | `pytest` + linting **ruff**                                                                                             |
 | **Licence / publié**  | Sur le Google Play Store (`ng.kiri.collabshell`), pub Kiri (Nwokike)                                                    |
 
-**Point clé à retenir** : c'est un projet *conçu pour être contribué*. Il suit **de manière scrupuleuse** les patterns React/Flutter de la nouvelle API Flet déclarative. Chaque fichier a une docstring qui explique *pourquoi* il existe et l'architecture *proven* (ex: *« Follows the proven SpanInsight & DDGS architecture »*, *« Adapted from KTV Player's pattern »*). L'auteur a documenté les ressources manquantes et les contraintes avec un soin rare. C'est exactement le genre de codebase où on apprend énormément en contribuant.
+**Point clé à retenir** : C'est un projet *conçu pour être contribué*. Il suit **de manière scrupuleuse** les patterns React/Flutter de la nouvelle API Flet déclarative. Chaque fichier a une docstring qui explique *pourquoi* il existe et l'architecture *proven* (ex: *« Follows the proven SpanInsight & DDGS architecture »*, *« Adapted from KTV Player's pattern »*). L'auteur a documenté les ressources manquantes et les contraintes avec un soin rare. C'est exactement le genre de codebase où on apprend énormément en contribuant.
+
+**Collab Shell** est une app à architecture principalement déclarative (React-like), avec des poches d'impératif légitimes et localisées__ — principalement pour les dialogues/overlays (mécanique hors-arbor Flet), le page chrome (NavigationBar/FAB), et quelques effets de bord de lifecycle. Les `.update()` (~37) sont concentrés là, ne servent jamais à piloter le rendu des écrans principaux, et la majorité sont soit des patterns d'overlay standard, soit des rafraîchissements défensifs redondants avec l'observable.
+Bref, ces **87% de ces appels touchent des dialogues/overlays/chrome — des couches hors-arbor déclaratif**, ou des effets de bord de lifecycle. C'est le même ratio qu'une vraie app React.
+
+
 
 ---
 
@@ -52,12 +57,12 @@ Tu l'as bien identifié : c'est un très beau projet. Voici ce qui est confirmé
                               │
    CONTEXTE :  ┌──────────────┴──────────────────────┐
                │  CONTEXTE / ÉTAT (l'ADN du projet)  │
-               └───────┬──────────────┬──────────────┘
-                       │              │
-           ┌───────────▼───┐   ┌──────▼────────┐
-           │  core/state   │   │   Services    │
-           │  @ft.observable│  │  Colab/OAuth  │
-           └───────────────┘   └───────────────┘
+               └───────┬────────────────┬────────────┘
+                       │                │
+           ┌─────────────▼───┐   ┌──────▼────────┐
+           │  core/state     │   │   Services    │
+           │  @ft.observable │   │  Colab/OAuth  │
+           └─────────────────┘   └───────────────┘
 ```
 
 **Le cœur du projet = trois "contextes" globaux** définis dans `src/state/` :
