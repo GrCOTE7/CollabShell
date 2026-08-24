@@ -1,18 +1,22 @@
 # My CollabShell — Comprendre le codebase
 <!-- no toc -->
 
-- [L'architecture globale en une vue](#larchitecture-globale-en-une-vue)
-- [Comment fonctionne la couche déclarative (à maîtriser absolument)](#comment-fonctionne-la-couche-déclarative-à-maîtriser-absolument)
-- [Le "Data Flow" complet (le plus important pour contribuer)](#le-data-flow-complet-le-plus-important-pour-contribuer)
-- [Le back-end / services (la partie "non-Flet")](#le-back-end--services-la-partie-non-flet)
-- [Le design system (pour contribuer joliment)](#le-design-system-pour-contribuer-joliment)
-- [Les raccourcis clavier (un "moteur" propre)](#les-raccourcis-clavier-un-moteur-propre)
-- [Build multi-plateforme \& CI (pour comprendre "Multi platform")](#build-multi-plateforme--ci-pour-comprendre-multi-platform)
-- [Les tests et la qualité](#les-tests-et-la-qualité)
-- [Ce qui te manque techniquement pour contribuer (plan d'apprentissage)](#ce-qui-te-manque-techniquement-pour-contribuer-plan-dapprentissage)
-- [Par où commencer pour contribuer (recommandations concrètes)](#par-où-commencer-pour-contribuer-recommandations-concrètes)
-- [Mon verdict sur tes craintes de "ne pas être à la hauteur"](#mon-verdict-sur-tes-craintes-de-ne-pas-être-à-la-hauteur)
-- [💡 Pour aller plus loin](#-pour-aller-plus-loin)
+- [0. Résumé](#0-résumé)
+- [1. L'architecture globale en une vue](#1-larchitecture-globale-en-une-vue)
+- [2. Comment fonctionne la couche déclarative (à maîtriser absolument)](#2-comment-fonctionne-la-couche-déclarative-à-maîtriser-absolument)
+- [3. Le "Data Flow" complet (Point le plus important pour contribuer)](#3-le-data-flow-complet-point-le-plus-important-pour-contribuer)
+- [4. Le back-end / services (la partie "non-Flet")](#4-le-back-end--services-la-partie-non-flet)
+- [5. Le design system (pour contribuer joliment)](#5-le-design-system-pour-contribuer-joliment)
+- [6. Les raccourcis clavier (un "moteur" propre)](#6-les-raccourcis-clavier-un-moteur-propre)
+- [7. Build multi-plateforme \& CI (pour comprendre "Multi platform")](#7-build-multi-plateforme--ci-pour-comprendre-multi-platform)
+- [8. Les tests et la qualité](#8-les-tests-et-la-qualité)
+- [9. Ce qui te manque techniquement pour contribuer (plan d'apprentissage)](#9-ce-qui-te-manque-techniquement-pour-contribuer-plan-dapprentissage)
+- [10. Par où commencer pour contribuer (recommandations concrètes)](#10-par-où-commencer-pour-contribuer-recommandations-concrètes)
+- [11. Mon verdict sur tes craintes de "ne pas être à la hauteur"](#11-mon-verdict-sur-tes-craintes-de-ne-pas-être-à-la-hauteur)
+- [12. 💡 Pour aller plus loin](#12--pour-aller-plus-loin)
+
+
+## 0. Résumé
 
 Tu l'as bien identifié : C'est un très beau projet. Voici ce qui est confirmé après exploration :
 
@@ -35,7 +39,7 @@ Bref, ces **87% de ces appels touchent des dialogues/overlays/chrome — des cou
 
 ---
 
-## L'architecture globale en une vue
+## 1. L'architecture globale en une vue
 
 ```text
 ┌───────────────────────────────────────────────────────────────┐
@@ -75,11 +79,11 @@ Bref, ces **87% de ces appels touchent des dialogues/overlays/chrome — des cou
 
 ---
 
-## Comment fonctionne la couche déclarative (à maîtriser absolument)
+## 2. Comment fonctionne la couche déclarative (à maîtriser absolument)
 
 C'est le sujet le plus important. Flet 0.86 a introduit une API inspirée de React. Voici chaque concept, avec un exemple réel tiré du code.
 
-### a) @ft.component → composant fonctionnelel
+### a) @ft.component → composant fonctionnel
 
 ```python
 @ft.component
@@ -89,24 +93,26 @@ def HomeScreen() -> ft.Control:
     return ft.Column(controls=[...])
 ```
 
-### b) ft.use_context(...) → lire un contexte globalal
+### b) ft.use_context(...) → lire un contexte global
 
 ```python
-state = ft.use_context(AppStateCtx)              # lit l'état observable
+state = ft.use_context(AppStateCtx)  # lit l'état observable
 controller = ft.use_context(ControllerMethodsCtx)  # lit les actions
-services = ft.use_context(ServiceCtx)            # lit les services
+services = ft.use_context(ServiceCtx)  # lit les services
 ```
 
 Si un état *lu* ici change, le composant est re-rendu.
 
-### c) ft.use_state(...) → état local au composantnt
+### c) ft.use_state(...) → état local au composant
 
 ```python
 sessions, set_sessions = ft.use_state([])
 is_loading, set_loading = ft.use_state(False)
 ```
 
-### d) @ft.observable → l'état global réactifif
+Cela permet de conserver un état local à un composant fonctionnel.
+
+### d) @ft.observable → l'état global réactif
 
 ```python
 @ft.observable
@@ -118,24 +124,24 @@ class AppState:
 
 Quand tu fais `state.current_tab = 2`, **tous les composants qui lisent `state.current_tab` se re-rendent**. C'est le moteur de "surgical re-renders" mentionné dans le README.
 
-### e) ft.on_mounted(...) / ft.use_effect(...) → effets de cycle de vie vie
+### e) ft.on_mounted(...) / ft.use_effect(...) → Effets de cycle de vie
 
-- `ft.on_mounted(fn)` : exécute `fn` une fois au montage (ex: charger les sessions, enregistrer les raccourcis).
-- `ft.use_effect(fn, deps)` : effet réactif qui se rejoue selon les dépendances (utilisé dans `AppShell` pour synchroniser la barre de navigation).
+- `ft.on_mounted(fn)` : Exécute `fn` une fois au montage (ex: charger les sessions, enregistrer des raccourcis, initialiser une ressource).
+- `ft.use_effect(fn, deps)` : Effet réactif qui se rejoue selon les dépendances (Notamment utilisé dans `AppShell` pour synchroniser la barre de navigation).
 
-### f) ft.ValueKey(...) → clé de réconciliationon
+### f) ft.ValueKey(...) → clé de réconciliation
 
 ```python
-key=ft.ValueKey(f"session_{state.active_session_name}_{state.session_mode}")
+key = ft.ValueKey(f"session_{state.active_session_name}_{state.session_mode}")
 ```
 
 Permet à Flet de savoir "quel sous-arbre réutiliser / détruire" quand l'état change (équivalent de `key` React).
 
 ---
 
-## Le "Data Flow" complet (le plus important pour contribuer)
+## 3. Le "Data Flow" complet (Point le plus important pour contribuer)
 
-Voici le cycle de vie tel que reconstitué.
+Voici le cycle de vie reconstitué.
 
 ### E1 – Démarrage** (`AppController.init()`, `main.py`)
 
@@ -171,7 +177,7 @@ C'est le **paradigme clé** : *« on ne touche jamais l'UI directement ; on modi
 
 ---
 
-## Le back-end / services (la partie "non-Flet")
+## 4. Le back-end / services (la partie "non-Flet")
 
 ### La couche ColabService — src/services/colab/ab/`
 
@@ -182,6 +188,7 @@ C'est un **wrapper asynchrone** autour du SDK `google-colab-cli`. Deux aspects �
 ```python
 async def check_auth(self) -> dict:
     from services.colab.auth import check_auth_impl  # import tardif
+
     return await check_auth_impl(self, ...)
 ```
 
@@ -220,7 +227,7 @@ C'est du **code méta-ingénierie** très intéressant, typique des apps packagi
 
 ---
 
-## Le design system (pour contribuer joliment)
+## 5. Le design system (pour contribuer joliment)
 
 Tout est **centré sur des tokens** (cohérence garantie) :
 
@@ -233,7 +240,7 @@ Tout est **centré sur des tokens** (cohérence garantie) :
 
 ---
 
-## Les raccourcis clavier (un "moteur" propre)
+## 6. Les raccourcis clavier (un "moteur" propre)
 
 `core/shortcuts.py` + `hooks/use_keyboard_shortcuts.py` :
 
@@ -246,7 +253,7 @@ C'est le module le plus **testé** du projet : `tests/hooks/test_use_keyboard_sh
 
 ---
 
-## Build multi-plateforme & CI (pour comprendre "Multi platform")
+## 7. Build multi-plateforme & CI (pour comprendre "Multi platform")
 
 Tout est dans `.github/workflows/build-all.yml` (déclenché par push de tag `v*`, PR, ou `workflow_dispatch` avec version/build_number) :
 
@@ -260,16 +267,23 @@ Tout est dans `.github/workflows/build-all.yml` (déclenché par push de tag `v*
 
 ---
 
-## Les tests et la qualité
+## 8. Les tests et la qualité
 
 - `tests/conftest.py` : rend `src` importable (layout plat).
 - Tests ciblés sur le **shortcut engine** et les actions notebook — pur logique métier, pas de test UI lourd.
 - Outils : `pytest` + `ruff` (config dans `pyproject.toml`, `lint.extend-ignore = ["BLE001", "S110"]`).
 - Pour lancer : `uv run pytest`, `uv run ruff check .`.
 
+```bash
+uv run pytest # test unitaires
+uv run ruff check --fix . && uv run ruff format . # vérif + format des .py
+```
+
+Note: Dans VSC, programmer pour rendre auto
+
 ---
 
-## Ce qui te manque techniquement pour contribuer (plan d'apprentissage)
+## 9. Ce qui te manque techniquement pour contribuer (plan d'apprentissage)
 
 Vu ton niveau (motivé mais modeste), voici les **4 piliers** à consolider, dans l'ordre :
 
@@ -293,7 +307,7 @@ uv run ruff format . # format
 
 ---
 
-## Par où commencer pour contribuer (recommandations concrètes)
+## 10. Par où commencer pour contribuer (recommandations concrètes)
 
 Pour progresser sans casquer, vise des contributions **encapsulées** :
 
@@ -304,7 +318,7 @@ Pour progresser sans casquer, vise des contributions **encapsulées** :
 
 ---
 
-## Mon verdict sur tes craintes de "ne pas être à la hauteur"
+## 11. Mon verdict sur tes craintes de "ne pas être à la hauteur"
 
 Relativise. Trois raisons de te rassurer :
 
@@ -316,7 +330,7 @@ Relativise. Trois raisons de te rassurer :
 
 ---
 
-## 💡 Pour aller plus loin
+## 12. 💡 Pour aller plus loin
 
 - **Mini-schéma "Data Flow" annoté** pour un cas concret (ex: ouvrir une session).
 - **Glossaire des concepts Flet/React** rencontrés dans le code.
